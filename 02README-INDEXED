@@ -1,0 +1,77 @@
+Directions to start from LDAPContacts-Simple to LDAPContacts-Indexed
+
+1) Add LDIFParserUtils.[hm] to project
+  - Select 'LDAPContacts' group in NavigatorPane
+  - File > Add Files to 'LDAPContacts'...
+  - Select the files "LDIFParserUtils.h" and "LDIFParserUtils.m" provided
+  - Check "Copy items into destination's group folder (if needed)"
+  - Click 'Add' button
+
+2) Define collate method in LDIFParser header
+  - Select LDIFParser.h
+  - Add following method definition:
+- (NSArray *)collate:(NSArray *)records
+
+3) Implement collate method in LDIFParser
+  - Select LDIFParser.m
+  - Add following method implementation:
+- (NSArray *)collate:(NSArray *)records
+{
+    NSMutableArray *sectionArrays = [self arrayForCollationIndex];
+    [self collateRecords:records into:sectionArrays withSelector:@selector(displayString)];
+    return [self sortCollatedRecords:sectionArrays withSelector:@selector(displayString)];
+}
+
+4) Add LDIFParserUtils header to LDIFParser.m
+  - Select LDIFParser.m
+  - After '#import "LDIFRecord.h", add:
+#import "LDIFParserUtils.h"
+
+5) Update UITableViewDataSource method numberOfSectionsInTableView:
+  - Select MasterViewController.m
+  - Find numberOfSectionsInTableView: method
+  - Change body to read:
+return [[[UILocalizedIndexedCollation currentCollation] sectionTitles] count];
+
+6) Update UITableViewDataSource method tableView:numberOfRowsInSection:
+  - Select MasterViewController.m
+  - Find tableView:numberOfRowsInSection:
+  - Change body to read:
+return [[_objects objectAtIndex:section] count];
+
+7) Update UITableViewDataSource method tableView:cellForRowAtIndexPath:
+  - Select MasterViewController.m
+  - Find tableView:cellForRowAtIndexPath:
+  - Change body to read:
+UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
+
+NSArray *section = [_objects objectAtIndex:[indexPath section]];
+LDIFRecord *object = section[indexPath.row];
+cell.textLabel.text = [object displayString];
+return cell;
+
+8) Implement UITableViewDataSource method sectionIndexTitlesForTableView:
+  - Select MasterViewController.m
+  - Find the commented method sectionIndexTitlesForTableView:
+  - Uncomment it
+  - Add the following to the body:
+return [[UILocalizedIndexedCollation currentCollation] sectionIndexTitles];
+
+9) Update UITableViewDataSource method tableView:titleForHeaderInSection:
+  - Select MasterViewController.m
+  - Find the commented method tableView:titleForHeaderInSection:
+  - Uncomment it
+  - Add the following to the body:
+return [[[UILocalizedIndexedCollation currentCollation] sectionTitles] objectAtIndex:section];
+
+10) Update UITableViewDataSource method tableView:sectionForSectionIndexTitle:atIndex:
+  - Select MasterViewController.m
+  - Find the commented method tableView:sectionForSectionIndexTitle:atIndex:
+  - Uncomment it
+  - Add the following to the body:
+return [[UILocalizedIndexedCollation currentCollation] sectionForSectionIndexTitleAtIndex:index];
+
+11) Collate the records
+  - Select LDIFParser.m
+  - Replace last line of parse method from 'return ldifRecords;', to :
+return [self collate:ldifRecords];

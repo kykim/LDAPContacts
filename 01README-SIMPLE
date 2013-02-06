@@ -1,0 +1,135 @@
+Directions to start from LDAPContacts-Start to LDAPContacts-Simple
+
+1) Add LDIF File to Project
+  - Select "Supporting Files" group in Navigator Pane
+  - File > Add Files to "LDAPContacts"
+  - Select the file "Example.ldif" provided
+  - Check "Copy items into destination's group folder (if needed)"
+  - Click 'Add' button
+
+2) Create LDIFRecord class
+  - Select "LDAPContacts" group in Navigator Pane
+  - File > New > File...
+  - Select "Cocoa Touch" under "iOS"
+  - Select "Objective-C class" template
+  - Click 'Next' button
+  - Name Class "LDIFRecord", subclass of NSObject
+  - Click 'Next' button
+  - Save file(s) in default location
+
+3) Create LDIFParser class
+  - Same as Step #2, but name class "LDIFParser"
+
+4) Define properties and methods to LDIFRecord header
+  - Select LDIFRecord.h
+  - After line with '@interface LDIFRecord : NSObject', add following:
+@property (strong, nonatomic) NSString *recordString;
+@property (strong, nonatomic) NSDictionary *records;
+- (id)initWithString:(NSString *)recordString;
+- (void)parseRecordString;
+
+4) Implement methods for LDIFRecord
+  - Select LDIFRecord.m
+  - After line with '@implementation LDIFRecord', add following:
+- (id)initWithString:(NSString *)recordString
+{
+    self = [super init];
+    if (self) {
+        _recordString = recordString;
+        [self parseRecordString];
+    }
+    return self;
+}
+
+- (void)parseRecordString
+{
+    NSMutableDictionary *results = [NSMutableDictionary dictionary];
+    NSArray *records = [_recordString componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    for (NSString *record in records) {
+        if ([record length] == 0) {
+            continue;
+        }
+        NSArray *kv = [record componentsSeparatedByString:@": "];
+        [results setValue:[kv objectAtIndex:1] forKey:[kv objectAtIndex:0]];
+    }
+    _records = results;
+    return;
+}
+
+5) Define properties and methods to LDIFParser header
+  - Select LDIFParser.h
+  - After line with '@interface LDIFParser : NSObject', add following:
+@property (strong, nonatomic) NSString *path;
+- (id)initWithLDIF:(NSString *)path;
+- (NSArray *)parse;
+
+6) Implement methods for LDIFParser
+  - Select LDIFParser.m
+  - After line with '@implementation LDIFParser', add following:
+- (id)initWithLDIF:(NSString *)path
+{
+    self = [super init];
+    if (self) {
+        _path = path;
+    }
+    return self;
+}
+
+- (NSArray *)parse
+{
+    NSMutableArray *ldifRecords = [NSMutableArray array];
+    NSString *ldifData = [NSString stringWithContentsOfFile:_path encoding:NSUTF8StringEncoding error:nil];
+    NSArray *records = [ldifData componentsSeparatedByString:@"\n\n"];
+    
+    for (NSInteger i = 1; i < [records count]; i++) {
+        NSString *record = [records objectAtIndex:i];
+        LDIFRecord *ldifRecord = [[LDIFRecord alloc] initWithString:record];
+        [ldifRecords addObject:ldifRecord];
+    }
+    
+    return ldifRecords;
+
+}
+
+7) Add LDIFRecord header to LDIFParser.m
+  - Select LDIFParser.m
+  - After '#import "LDIFParser.h", add:
+#import "LDIFRecord.h"
+
+8) Load and parse the LDIF file
+  - Select MasterViewController.m
+  - Add following to - (void)viewDidLoad method, after call to super
+NSString *ldifPath = [[NSBundle mainBundle] pathForResource:@"Example" ofType:@"ldif"];
+LDIFParser *ldifParser = [[LDIFParser alloc] initWithLDIF:ldifPath];
+_objects = [ldifParser parse];
+
+9) Add LDIFParser header to MasterViewController.m
+  - Select MasterViewController.m
+  - After '#import "MasterViewController.h", add:
+#import "LDIFParser.h"
+
+10) Add displayString method to LDIFRecord
+  - Select LDIFRecord.h
+  - Add following method definition:
+- (NSString *)displayString;
+
+11) Implement displayString method in LDIFRecord
+  - Select LDIFRecord.m
+  - Add following method implementation:
+- (NSString *)displayString
+{
+    return [NSString stringWithFormat:@"%@, %@", [_items valueForKey:@"sn"], [_items valueForKey:@"givenName"]];
+}
+
+12) Update tableView:cellForRowAtIndexPath: to use displayString
+  - Select MasterViewController.m
+  - Find tableView:cellForRowAtIndexPath: method (around line 54)
+  - Change line 58 from: 'id object = _objects[indexPath.row];', to:
+LDIFRecord *object = _objects[indexPath.row];
+  - Change line 59 from: 'cell.textLabel.text = [object description];', to:
+cell.textLabel.text = [object displayString];
+
+13) Add LDIFRecord header to MasterViewController.m
+  - Select MasterViewController.m
+  - After '#import "LDIFParser.h"', add:
+#import "LDIFRecord.h"

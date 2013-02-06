@@ -1,0 +1,92 @@
+Directions to start from Scratch to LDAPContacts-Start
+
+1) Open Xcode
+
+2) Create a New Project
+  - Select Master-Detail Application template
+  - Use following:
+    Product Name: LDAPContacts
+    Devices: iPhone
+    Use Storyboards, Use Automatic Reference Counting should be checked
+
+3) Add AddressBook and AddressBookUI frameworks
+  - Select Project in Navigation Pane
+  - Select Target "LDAPContacts" in Project Pane
+  - Select "Build Phases" tab
+  - Expand "Link Binary With Libraries" section
+  - Click '+' button
+  - Find and select AddressBook.framework and AddressBookUI.framework
+  - Click 'Add'
+  - (Optional) Move frameworks into Frameworks group in Navigation Pane
+
+4) Clean up unnecessary code
+  - Select MainStoryboard.storyboard in Navigation Pane
+  - Find box labeled "Detail View Controller" and select it
+  - Delete the Detail View Controller
+  - Select DetailViewController.[hm] in the Navigation Pane
+  - Delete the files. When asked, move the files to the Trash
+  - Select MasterViewController.m
+  - Delete line 11: #import "DetailViewController.h"
+  - Delete lines 28-31
+    Starts with: self.navigationItem.leftBarButtonItem = self.editButtonItem;
+    Ends with: self.navigationItem.rightBarButtonItem = addButton;
+  - Delete lines 36-44: insertNewObject: method
+  - Delete lines 90-97: prepareForSegue:sender: method
+
+5) Insert UITableViewDataSource method stubs at line 74:
+#pragma mark - UITableViewDataSource Methods for Indexed TableViews
+
+/*
+- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView
+{
+    
+}
+*/
+
+/*
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
+{
+    
+}
+*/
+
+/*
+- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index
+{
+    
+}
+*/
+
+/*
+// Override to support rearranging the table view.
+- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
+{
+}
+*/
+
+6) Insert UITableViewDelegate methods stub at line 96:
+/*
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    
+}
+*/
+
+7) Modify Table View Cells
+  - Select MainStoryboard.storyboard
+  - Select the table view cell
+  - Open the Attributes Editor ( View > Utilities > Show Attributes Editor )
+  - Change "Selection" from "Blue" to "None"
+  - Change "Accessory" from "Disclosure Indicator" to "None"
+
+8) Modify tableView:cellForRowAtIndexPath:
+  - Select MasterViewController.m in Navigation Pane
+  - Edit line 53 to read:
+    id object = _objects[indexPath.row];
+
+9) Modify _objects declaration
+  - Select MasterViewController.m in Navigation Pane
+  - Edit line 13 to read:
+    NSArray *_objects;
+  - Delete lines 64-72: tableView:commitEditingStyle:forRowAtIndexPath: method
+ 

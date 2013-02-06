@@ -1,0 +1,126 @@
+Directions to start from LDAPContacts-Indexed to LDAPContacts-Person
+
+1) Add LDIFRecordUtils.[hm] to project
+  - Select 'LDAPContacts' group in NavigatorPane
+  - File > Add Files to 'LDAPContacts'...
+  - Select the files "LDIFRecordUtils.h" and "LDIFRecordUtils.m" provided
+  - Check "Copy items into destination's group folder (if needed)"
+  - Click 'Add' button
+
+2) Add LDIFRecordUtils header to LDIFRecord.m
+  - Select LDIFRecord.m
+  - After '#import "LDIFRecord.h", add:
+#import "LDIFRecordUtils.h"
+
+3) Define abPerson method in LDIFRecord header
+  - Select LDIFRecord.h
+  - Add following method definitions:
+- (ABRecordRef)abPerson;
+- (void)setEmailForRecord:(ABRecordRef)record;
+- (void)setPhonesForRecord:(ABRecordRef)record;
+- (void)setAddressForRecord:(ABRecordRef)record;
+
+4) Add AddressBook framework header to LDIFRecord header
+  - Select LDIFRecord.h
+  - After '#import <Foundation/Foundation.h>' add, 
+#import <AddressBook/AddressBook.h>
+
+5) Implement abPerson method in LDIFRecord
+  - Select LDIFRecord.m
+  - Add the following method:
+- (ABRecordRef)abPerson
+{
+    ABRecordRef aRecord = ABPersonCreate();
+    
+    [self setStringValue:[_records valueForKey:@"givenName"] forProperty:kABPersonFirstNameProperty ofRecord:aRecord];
+    [self setStringValue:[_records valueForKey:@"sn"] forProperty:kABPersonLastNameProperty ofRecord:aRecord];
+    [self setStringValue:[_records valueForKey:@"title"] forProperty:kABPersonJobTitleProperty ofRecord:aRecord];
+    [self setStringValue:[_records valueForKey:@"ou"] forProperty:kABPersonDepartmentProperty ofRecord:aRecord];
+    [self setStringValue:[_records valueForKey:@"description"] forProperty:kABPersonNoteProperty ofRecord:aRecord];
+    
+    [self setEmailForRecord:aRecord];
+    [self setPhonesForRecord:aRecord];
+    [self setAddressForRecord:aRecord];
+    
+    return aRecord;
+}
+
+6) Implement setEmailForRecord: method in LDIFRecord
+  - Select LDIFRecord.m
+  - Add the following method:
+- (void)setEmailForRecord:(ABRecordRef)record
+{
+    ABMutableMultiValueRef emails = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+    [self setStringValue:[_records valueForKey:@"mail"] andLabel:kABWorkLabel forMultiValueRef:emails];
+    [self setValue:emails forProperty:kABPersonEmailProperty ofRecord:record];
+    CFRelease(emails);
+    return;
+}
+
+7) Implement setPhonesForRecord: method in LDIFRecord
+  - Select LDIFRecord.m
+  - Add the following method:
+- (void)setPhonesForRecord:(ABRecordRef)record
+{
+    ABMutableMultiValueRef phones = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+    [self setStringValue:[_records valueForKey:@"telephoneNumber"] andLabel:kABPersonPhoneMainLabel forMultiValueRef:phones];
+    [self setStringValue:[_records valueForKey:@"mobile"] andLabel:kABPersonPhoneMobileLabel forMultiValueRef:phones];
+    [self setStringValue:[_records valueForKey:@"homePhone"] andLabel:kABHomeLabel forMultiValueRef:phones];
+    [self setStringValue:[_records valueForKey:@"facsimileTelephoneNumber"] andLabel:kABPersonPhoneWorkFAXLabel forMultiValueRef:phones];
+    [self setStringValue:[_records valueForKey:@"pager"] andLabel:kABPersonPhonePagerLabel forMultiValueRef:phones];
+    [self setValue:phones forProperty:kABPersonPhoneProperty ofRecord:record];
+    CFRelease(phones);
+}
+
+8) Implement setAddressForRecord: method in LDIFRecord
+  - Select LDIFRecord.m
+  - Add the following method:
+- (void)setAddressForRecord:(ABRecordRef)record
+{
+    // Address
+    NSArray *ldifAddress = [[_records valueForKey:@"postalAddress"] componentsSeparatedByString:@"$"];
+    NSDictionary *addressDictionary = @{ (__bridge NSString *)kABPersonAddressStreetKey  : [ldifAddress objectAtIndex:0],
+                                         (__bridge NSString *)kABPersonAddressCityKey    : [ldifAddress objectAtIndex:1],
+                                         (__bridge NSString *)kABPersonAddressStateKey   : @"CA",
+                                         (__bridge NSString *)kABPersonAddressCountryKey : @"USA" };
+    ABMutableMultiValueRef address = ABMultiValueCreateMutable(kABDictionaryPropertyType);
+    
+    BOOL success = ABMultiValueAddValueAndLabel(address, (__bridge_retained CFDictionaryRef)addressDictionary, kABWorkLabel, NULL);
+    if (success)
+        [self setValue:address forProperty:kABPersonAddressProperty ofRecord:record];
+    return;
+}
+
+9) Add ABPersonViewControllerDelegate
+  - Select MasterViewController.h
+  - Add following, after '#import <UIKit/UIKit.h>'
+#import <AddressBookUI/AddressBookUI.h>
+  - Add change @interface declaration to:
+@interface MasterViewController : UITableViewController <ABPersonViewControllerDelegate>
+
+10) Add ABPersonViewControllerDelegate method to MasterViewController.m
+  - Select MasterViewController.m
+  - Add following method
+#pragma mark - ABPersonViewControllerDelegate Method
+
+- (BOOL)personViewController:(ABPersonViewController *)personViewController shouldPerformDefaultActionForPerson:(ABRecordRef)person property:(ABPropertyID)property identifier:(ABMultiValueIdentifier)identifierForValue
+{
+    return NO;
+}
+
+3) 
+
+11) Update UITableViewDelegate method tableView:didSelectRowAtIndexPath:
+  - Select MasterViewController.m
+  - Find the commented method tableView:didSelectRowAtIndexPath:
+  - Uncomment it
+  - Add the following to the body:
+NSArray *section = [_objects objectAtIndex:[indexPath section]];
+LDIFRecord *object = [section objectAtIndex:[indexPath row]];
+ABPersonViewController *personVC = [[ABPersonViewController alloc] init];
+personVC.personViewDelegate = self;
+personVC.displayedPerson = [object abPerson];
+[self.navigationController pushViewController:personVC animated:YES];
+
+
+
